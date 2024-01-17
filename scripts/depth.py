@@ -25,10 +25,8 @@ base_path = Path(__file__).parent.parent.resolve()
 
 @hydra.main(config_path=f"{base_path}/config", config_name="digit.yaml", version_base=None)
 def show_depth(cfg):
-    depth_pub = rospy.Publisher("/digit/depth/image_raw/",
-                                    Image, queue_size=10)
-    contact_pub = rospy.Publisher("/digit/depth/contact/",
-                                    Contact, queue_size=10)
+    depth_pub = rospy.Publisher("/digit/depth/image_raw/", Image, queue_size=10)
+    contact_pub = rospy.Publisher("/digit/depth/contact/", Contact, queue_size=10)
     br = CvBridge()
     model_path = find_recent_model(f"{base_path}/models")
     model = torch.load(model_path).to(device)
