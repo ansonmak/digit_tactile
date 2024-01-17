@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """ Publishes a ROS topic with name /digit//depth/image_raw.
     Be sure to tune the parameters in rqt_image_view for better visualization."""
 import cv2
@@ -5,7 +6,12 @@ import hydra
 import rospy
 from pathlib import Path
 from sensor_msgs.msg import Image, CompressedImage
+from digit_tactile.msg import Contact
 from cv_bridge import CvBridge
+import sys, os
+from pathlib import Path
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(os.path.dirname(SCRIPT_DIR))
 from digit_depth.third_party import geom_utils
 from digit_depth.digit import DigitSensor
 from digit_depth.train.prepost_mlp import *
@@ -21,6 +27,8 @@ base_path = Path(__file__).parent.parent.resolve()
 def show_depth(cfg):
     depth_pub = rospy.Publisher("/digit/depth/image_raw/",
                                     Image, queue_size=10)
+    contact_pub = rospy.Publisher("/digit/depth/contact/",
+                                    Contact, queue_size=10)
     br = CvBridge()
     model_path = find_recent_model(f"{base_path}/models")
     model = torch.load(model_path).to(device)
@@ -61,7 +69,9 @@ def show_depth(cfg):
         if cfg.visualize.ellipse:
             img = thresh4
             pt = ContactArea()
-            theta = pt.__call__(target=thresh4)
+            contact_msg = Contact()
+            contact_msg.theta, contact_msg.x, contact_msg.y = pt.__call__(target=thresh4)
+            contact_pub.publish(contact_msg)
             msg = br.cv2_to_imgmsg(img, encoding="passthrough")
             msg.header.stamp = rospy.Time.now()
             depth_pub.publish(msg)

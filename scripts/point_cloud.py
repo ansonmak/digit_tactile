@@ -12,7 +12,7 @@ from digit_depth.handlers import find_recent_model, find_background_img
 seed = 42
 torch.seed = seed
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-base_path = Path(__file__).parent.parent.parent.resolve()
+base_path = Path(__file__).parent.parent.resolve()
 
 
 @hydra.main(config_path=f"{base_path}/config", config_name="digit.yaml", version_base=None)

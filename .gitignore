@@ -1,23 +1,23 @@
-.idea
+# .idea
 digit_depth/__pycache__/
 digit_depth/digit/__pycache__/
 /*.egg-info
-/dist/
+# /dist/
 *.pyc
-.vscode/
-.mypy_cache/
+# .vscode/
+# .mypy_cache/
 __pycache__/
-*.pyc
-*.csv
-*.pth
-*.jpg
- build/
- datasets/
+# *.pyc
+# *.csv
+# *.pth
+# *.jpg
 build/
-images/
-datasets/
-models/
-outputs
+#  datasets/
+# build/
+# images/
+# datasets/
+# models/
+# outputs
 wandb/
-mm_to_pix
-images_mike
+# mm_to_pix
+# images_mike

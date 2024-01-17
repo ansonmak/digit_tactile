@@ -13,7 +13,7 @@ hydra:
 
 # DIGIT config
 sensor:
-  serial_num: "D00001"
+  serial_num: "D20641"
   resolution: "QVGA" # QVGA, VGA
   fps : 30 # Max is 60
   T_cam_offset: [ [ 2.22e-16, 2.22e-16, -1.00e+00, 0.00e+00 ],
@@ -33,8 +33,8 @@ sensor:
   gel_thickness: 0.0046 # gel thickness in meters
   gel_min_depth: 0.01954 # gel min depth in meters (max deformation) 
 
-mm_to_pixel: 17.15 # 1 mm = 17.15 pixels
-ball_diameter: 6.0  # in mm
+mm_to_pixel: 18.68 # 1 mm = 17.15 pixels
+ball_diameter: 8.8  # in mm
 max_depth: 0.02076 # gel max depth in meters (min deformation)
 
 # Depth configs

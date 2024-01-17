@@ -387,11 +387,13 @@ class ContactArea:
         contours, _= cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
         result = self._compute_contact_area(contours, self.contour_threshold)
         if result is None:
-            return 
+            return -1, -1, -1
         else:
             (poly,major_axis,major_axis_end,minor_axis,minor_axis_end,theta) = result
             self._draw_major_minor(target, poly, major_axis, major_axis_end, minor_axis, minor_axis_end)
-            return  theta
+            x = int((major_axis[0]+major_axis_end[0])/2)
+            y = int((major_axis[1]+major_axis_end[1])/2)
+            return theta, x, y
 
 
     def _draw_major_minor(self,target,poly,major_axis,major_axis_end,minor_axis,minor_axis_end,lineThickness=2):
@@ -421,6 +423,13 @@ class ContactArea:
             (0, 255, 0),  # green color
             lineThickness,
         )
+        # cv2.circle(
+        #     target, 
+        #     (int((major_axis[0]+major_axis_end[0])/2),int((major_axis[1]+major_axis_end[1])/2)), 
+        #     radius=10, 
+        #     color=(0, 0, 255), 
+        #     thickness=3
+        # )
         
 
     def _compute_contact_area(self, contours, contour_threshold):

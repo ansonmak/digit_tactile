@@ -1,5 +1,8 @@
 import time
-
+import sys, os
+from pathlib import Path
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(os.path.dirname(SCRIPT_DIR))
 from digit_interface import Digit
 from digit_interface.digit import DigitDefaults
 
