@@ -33,15 +33,17 @@ class Config:
         self.gel_height = self.config['sensor']['gel_height']
         self.max_depth = self.config['max_depth']
         
-class Digit:
-    def __init__(self, config, publish, model):
+class DigitContact:
+    def __init__(self, config, publish, model_name):
         self.config = config
         self._digit = DigitSensor(self.config.fps, self.config.res, self.config.ID)
         self.call = self._digit()
         self.dm_zero = 0
         self.zero_depth_sample = 50
         self.pub = publish
-        self.model = model
+        model_path = find_recent_model(f"{base_path}/"+model_name)
+        self.model = torch.load(model_path).to(device)
+        self.model.eval()
 
     def get_depth_img(self, counter):
         # get camera frame from digit sensor
@@ -92,12 +94,8 @@ def publish_contacts():
     left_conf = Config('digit_left.yaml')
     right_conf = Config('digit_right.yaml')
 
-    model_path = find_recent_model(f"{base_path}/models")
-    model = torch.load(model_path).to(device)
-    model.eval()
-
-    leftD = Digit(left_conf, left_contact_pub, model)
-    rightD = Digit(right_conf, right_contact_pub, model)
+    leftD = DigitContact(left_conf, left_contact_pub, "model_left")
+    rightD = DigitContact(right_conf, right_contact_pub, "model_right")
     counter = 0
     while not rospy.is_shutdown():
         left_depth_img = leftD.get_depth_img(counter)
