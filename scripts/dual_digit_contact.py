@@ -9,6 +9,7 @@ import yaml
 import rospy
 import numpy
 from sensor_msgs.msg import Image, CompressedImage
+from std_msgs.msg import Float32
 from digit_tactile.msg import Contact
 from cv_bridge import CvBridge
 br = CvBridge()
@@ -39,6 +40,7 @@ class DigitContact:
         self._digit = DigitSensor(self.config.fps, self.config.res, self.config.ID)
         self.call = self._digit()
         self.dm_zero = 0
+        self.actual_deformation = 0.0
         self.zero_depth_sample = 50
         self.pub = publish
         model_path = find_recent_model(f"{base_path}/"+model_name)
@@ -58,6 +60,9 @@ class DigitContact:
         # reconstruct depth
         img_depth = geom_utils._integrate_grad_depth(gradx_img, grady_img, boundary=None, bg_mask=None,max_depth=self.config.max_depth)
         img_depth = img_depth.detach().cpu().numpy() # final depth image for current image
+
+        max_deformation = np.min(img_depth.flatten())
+        self.actual_deformation = float(np.abs((max_deformation - np.min(self.dm_zero))) * 1000) # convert to mm
 
         # Get the first 50 frames and average them to get the zero depth
         if counter < self.zero_depth_sample:
@@ -81,6 +86,7 @@ class DigitContact:
         pt = ContactArea()
         contact_msg = Contact()
         contact_msg.theta, contact_msg.x, contact_msg.y = pt.__call__(target=self.result_img)
+        contact_msg.deformation = self.actual_deformation
         self.pub.publish(contact_msg)
 
 
