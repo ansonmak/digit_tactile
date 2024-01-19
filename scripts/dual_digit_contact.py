@@ -23,7 +23,7 @@ seed = 42
 torch.seed = seed
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-class Config:
+class DigitConfig:
     def __init__(self, file_name):
         with open(f"{base_path}/config/"+file_name, 'r') as stream:
             self.config = yaml.safe_load(stream)
@@ -97,8 +97,8 @@ def publish_contacts():
     right_contact_pub = rospy.Publisher("/digit/right/contact/", Contact, queue_size=10)
     rate = rospy.Rate(50)
 
-    left_conf = Config('digit_left.yaml')
-    right_conf = Config('digit_right.yaml')
+    left_conf = DigitConfig('digit_left.yaml')
+    right_conf = DigitConfig('digit_right.yaml')
 
     leftD = DigitContact(left_conf, left_contact_pub, "model_left")
     rightD = DigitContact(right_conf, right_contact_pub, "model_right")
