@@ -8,7 +8,7 @@ digit_depth/digit/__pycache__/
 # .mypy_cache/
 __pycache__/
 # *.pyc
-*.csv
+csv/
 # *.pth
 # *.jpg
 build/
@@ -18,5 +18,5 @@ datasets/
 # models/
 # outputs
 wandb/
-mm_to_pix
+mm_to_pix/
 # images_mike
