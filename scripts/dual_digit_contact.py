@@ -86,13 +86,13 @@ class DigitContact:
         pt = ContactArea()
         contact_msg = Contact()
         contact_msg.theta, contact_msg.x, contact_msg.y = pt.__call__(target=self.result_img)
-        contact_msg.deformation = self.actual_deformation
+        contact_msg.depth = self.actual_deformation
         self.pub.publish(contact_msg)
 
 
 def publish_contacts():
     rospy.init_node('dual_digit', anonymous=True)
-    depth_pub = rospy.Publisher("/digit/depth/image_raw/", Image, queue_size=10)
+    depth_pub = rospy.Publisher("/digit/depth_image/", Image, queue_size=10)
     left_contact_pub = rospy.Publisher("/digit/left/contact/", Contact, queue_size=10)
     right_contact_pub = rospy.Publisher("/digit/right/contact/", Contact, queue_size=10)
     rate = rospy.Rate(50)
