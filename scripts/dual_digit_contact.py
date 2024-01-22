@@ -100,8 +100,8 @@ def publish_contacts():
     left_conf = DigitConfig('digit_left.yaml')
     right_conf = DigitConfig('digit_right.yaml')
 
-    leftD = DigitContact(left_conf, left_contact_pub, "model_left")
-    rightD = DigitContact(right_conf, right_contact_pub, "model_right")
+    leftD = DigitContact(left_conf, left_contact_pub, "models/model_left")
+    rightD = DigitContact(right_conf, right_contact_pub, "models/model_right")
     counter = 0
     while not rospy.is_shutdown():
         left_depth_img = leftD.get_depth_img(counter)
