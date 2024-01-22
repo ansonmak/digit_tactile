@@ -11,6 +11,7 @@ import numpy
 from sensor_msgs.msg import Image, CompressedImage
 from std_msgs.msg import Float32
 from digit_tactile.msg import Contact
+from digit_tactile.srv import ResetDepth
 from cv_bridge import CvBridge
 br = CvBridge()
 
@@ -46,8 +47,10 @@ class DigitContact:
         model_path = find_recent_model(f"{base_path}/"+model_name)
         self.model = torch.load(model_path).to(device)
         self.model.eval()
+        self.init_counter = 0
+        self.reset_depth = True
 
-    def get_depth_img(self, counter):
+    def get_depth_img(self):
         # get camera frame from digit sensor
         frame = self.call.get_frame()
         # get normal mapping img with trained model
@@ -65,11 +68,16 @@ class DigitContact:
         self.actual_deformation = float(np.abs((max_deformation - np.min(self.dm_zero))) * 1000) # convert to mm
 
         # Get the first 50 frames and average them to get the zero depth
-        if counter < self.zero_depth_sample:
-            self.dm_zero += img_depth
-            return None
-        elif counter == self.zero_depth_sample:
-            self.dm_zero = self.dm_zero/self.zero_depth_sample
+        if self.reset_depth:
+            if self.init_counter < self.zero_depth_sample:
+                self.dm_zero += img_depth
+                self.init_counter += 1
+                return None
+            elif self.init_counter == self.zero_depth_sample:
+                self.dm_zero = self.dm_zero/self.zero_depth_sample
+                self.reset_depth = False
+                self.init_counter = 0
+                rospy.loginfo("Digit sensor {} initialized.". format(self.config.ID))
         
         # remove the zero depth
         self.diff = img_depth - self.dm_zero
@@ -89,33 +97,50 @@ class DigitContact:
         contact_msg.depth = self.actual_deformation
         self.pub.publish(contact_msg)
 
+    def reset(self):
+        self.dm_zero = 0
+        self.reset_depth = True
+        rospy.loginfo("Resetting Digit sensor {}...".format(self.config.ID))
+
+reset_sensor = False
+def reset_depth_handler(req):
+    global reset_sensor
+    reset_sensor = True
+    return True
 
 def publish_contacts():
     rospy.init_node('dual_digit', anonymous=True)
+    rate = rospy.Rate(50)
     depth_pub = rospy.Publisher("/digit/depth_image/", Image, queue_size=10)
     left_contact_pub = rospy.Publisher("/digit/left/contact/", Contact, queue_size=10)
     right_contact_pub = rospy.Publisher("/digit/right/contact/", Contact, queue_size=10)
-    rate = rospy.Rate(50)
+    reset_depth_srv = rospy.Service('/digit/reset_depth', ResetDepth, reset_depth_handler)
 
     left_conf = DigitConfig('digit_left.yaml')
     right_conf = DigitConfig('digit_right.yaml')
 
-    leftD = DigitContact(left_conf, left_contact_pub, "models/model_left")
-    rightD = DigitContact(right_conf, right_contact_pub, "models/model_right")
-    counter = 0
+    leftDigit = DigitContact(left_conf, left_contact_pub, "models/model_left")
+    rightDigit = DigitContact(right_conf, right_contact_pub, "models/model_right")
+    
+    global reset_sensor
+    time_printed = False
     while not rospy.is_shutdown():
-        left_depth_img = leftD.get_depth_img(counter)
-        right_depth_img = rightD.get_depth_img(counter)
+        if reset_sensor:
+            leftDigit.reset()
+            rightDigit.reset()
+            reset_sensor = False
 
-        counter += 1
+        left_depth_img = leftDigit.get_depth_img()
+        right_depth_img = rightDigit.get_depth_img()
+
         if left_depth_img is None or right_depth_img is None:
             continue # skip the loop during sampling intial frames
 
-        left_result_img = leftD.get_result_img()
-        leftD.publish_contact()
+        left_result_img = leftDigit.get_result_img()
+        leftDigit.publish_contact()
 
-        right_result_img = rightD.get_result_img()
-        rightD.publish_contact()
+        right_result_img = rightDigit.get_result_img()
+        rightDigit.publish_contact()
 
         left_right_combine_img = np.concatenate((left_result_img, right_result_img), axis=1)
         img_msg = br.cv2_to_imgmsg(left_right_combine_img, encoding="passthrough")
@@ -123,7 +148,12 @@ def publish_contacts():
         depth_pub.publish(img_msg)
 
         now = rospy.get_rostime()
-        rospy.loginfo("published depth image at {}".format(now)) # show on rqt_image_view
+        
+        if (now.secs % 2 == 0):
+            if not time_printed:
+                rospy.loginfo("published messages at {}".format(now.secs)) # show on rqt_image_view
+                time_printed = True
+        else: time_printed = False
         rate.sleep()
 
 
