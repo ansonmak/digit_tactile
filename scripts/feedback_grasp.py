@@ -9,6 +9,7 @@ from robotiq_2f_gripper_control.robotiq_2f_gripper_driver import Robotiq2FingerG
 
 # digit contact msg
 from digit_tactile.msg import Contact
+from digit_tactile.srv import ResetDepth
 
 rospy.init_node('Robotiq_client')
 
@@ -33,6 +34,13 @@ def get_avg_depth():
 rospy.Subscriber("/digit/left/contact/", Contact, leftContact_callback)
 rospy.Subscriber("/digit/right/contact/", Contact, rightContact_callback)
 
+def reset_digit():
+    rospy.wait_for_service('/digit/reset_depth')
+    try:
+        reset = rospy.ServiceProxy('/digit/reset_depth', ResetDepth)
+        return reset()
+    except rospy.ServiceException as e:
+        print("Service call failed: %s"%e)
 
 def grasp():
     grip_depth = 0.2
@@ -60,6 +68,8 @@ def grasp():
 
         input("Press ENTER to open gripper")
         Robotiq.goto(robotiq_client, open, speed, force, block=False)
+        print("Reset Digit")
+        reset_digit()
 
         
 
