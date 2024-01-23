@@ -123,7 +123,8 @@ def publish_contacts():
     rightDigit = DigitContact(right_conf, right_contact_pub, "models/model_right")
     
     global reset_sensor
-    time_printed = False
+    print_time = rospy.Time(0)
+    start_time = rospy.Time.now()
     while not rospy.is_shutdown():
         if reset_sensor:
             leftDigit.reset()
@@ -147,13 +148,10 @@ def publish_contacts():
         img_msg.header.stamp = rospy.Time.now()
         depth_pub.publish(img_msg)
 
-        now = rospy.get_rostime()
-        
-        if (now.secs % 2 == 0):
-            if not time_printed:
-                rospy.loginfo("published messages at {}".format(now.secs)) # show on rqt_image_view
-                time_printed = True
-        else: time_printed = False
+        now = rospy.Time.now()
+        if (now - print_time >= rospy.Duration(1)):
+            rospy.loginfo("published messages at t={}s".format(now.secs-start_time.secs)) # show on rqt_image_view
+            print_time = rospy.Time.now()
         rate.sleep()
 
 
