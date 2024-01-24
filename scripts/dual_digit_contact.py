@@ -61,16 +61,16 @@ class DigitContact:
         gradx_img, grady_img = geom_utils._normal_to_grad_depth(img_normal=img_np, gel_width=self.config.gel_width,
                                                                 gel_height=self.config.gel_height,bg_mask=None)
         # reconstruct depth
-        img_depth = geom_utils._integrate_grad_depth(gradx_img, grady_img, boundary=None, bg_mask=None,max_depth=self.config.max_depth)
-        img_depth = img_depth.detach().cpu().numpy() # final depth image for current image
+        self.img_depth = geom_utils._integrate_grad_depth(gradx_img, grady_img, boundary=None, bg_mask=None,max_depth=self.config.max_depth)
+        self.img_depth = self.img_depth.detach().cpu().numpy() # final depth image for current image
 
-        max_deformation = np.min(img_depth.flatten())
+        max_deformation = np.min(self.img_depth.flatten())
         self.actual_deformation = float(np.abs((max_deformation - np.min(self.dm_zero))) * 1000) # convert to mm
 
         # Get the first 50 frames and average them to get the zero depth
         if self.reset_depth:
             if self.init_counter < self.zero_depth_sample:
-                self.dm_zero += img_depth
+                self.dm_zero += self.img_depth
                 self.init_counter += 1
                 return None
             elif self.init_counter == self.zero_depth_sample:
@@ -80,7 +80,7 @@ class DigitContact:
                 rospy.loginfo("Digit sensor {} initialized.". format(self.config.ID))
         
         # remove the zero depth
-        self.diff = img_depth - self.dm_zero
+        self.diff = self.img_depth - self.dm_zero
         # convert pixels into 0-255 range
         self.diff = self.diff*255
         self.diff = self.diff*-1
@@ -150,7 +150,7 @@ def publish_contacts():
 
         now = rospy.Time.now()
         if (now - print_time >= rospy.Duration(1)):
-            rospy.loginfo("published messages at t={}s".format(now.secs-start_time.secs)) # show on rqt_image_view
+            rospy.loginfo("Contact msg published at t={}s".format(now.secs-start_time.secs)) # show on rqt_image_view
             print_time = rospy.Time.now()
         rate.sleep()
 
