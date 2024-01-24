@@ -31,6 +31,9 @@ def rightContact_callback(data):
 def get_avg_depth():
     return (left_depth + right_depth)/2
 
+def get_max_depth():
+    return max(left_depth, right_depth)
+
 rospy.Subscriber("/digit/left/contact/", Contact, leftContact_callback)
 rospy.Subscriber("/digit/right/contact/", Contact, rightContact_callback)
 
@@ -42,36 +45,65 @@ def reset_digit():
     except rospy.ServiceException as e:
         print("Service call failed: %s"%e)
 
-def grasp():
-    grip_depth = 0.2
-    open = 0.085
-    close = 0.0
-    speed = 0.01
-    force = 0.1
-    Robotiq.goto(robotiq_client, open, speed, force, block=False)
+# close gripper in small step, stop closing when detected
+def grasp_steps():
+    grip_depth = 0.15
+    step = float(1.0 / 1000.0)  # meter
+    speed = 0.2
+    force = 0.01
+    Robotiq.open(robotiq_client, block=False)
 
     while not rospy.is_shutdown(): 
         # print(left_depth, right_depth)
         input("Press ENTER to close gripper")
-        Robotiq.goto(robotiq_client, close, speed, force, block=False)
+        width = 0.085
+        while (get_max_depth() < grip_depth and width > 0.0):
+            width -= step
+            print(f"Closing at: {width*1000 :.2f}mm")
+            Robotiq.goto(robotiq_client, width, speed, force, block=True)
+            rospy.sleep(0.05)
+        if (width > 0.0001):
+            print("Object detected! Stopped gripper action")
+            print(f"Left {left_depth :.2f}mm", f"Right {right_depth :.2f}mm")
+
+        rospy.sleep(1)
+        print("After stopping")
+        print(f"Left {left_depth :.2f}mm", f"Right {right_depth :.2f}mm")
+        input("Press ENTER to open gripper")
+        Robotiq.open(robotiq_client, speed, force, block=True)
+        print("Reset Digit")
+        reset_digit()
+
+# close gripper in one command and stop when detect
+def grasp_oneshot():
+    grip_depth = 0.1
+    speed = 0.01
+    force = 0.01
+    Robotiq.open(robotiq_client, speed, force, block=False)
+
+    while not rospy.is_shutdown(): 
+        # print(left_depth, right_depth)
+        input("Press ENTER to close gripper")
+        Robotiq.close(robotiq_client, speed, force, block=False)
         close_time = time.time()
         while True:
-            if (get_avg_depth() > grip_depth):
+            if (get_max_depth() > grip_depth):
                 print("Object detected! Stopped gripper action")
-                Robotiq.stop(robotiq_client, block=False)
-                print(f"Contact depth: {get_avg_depth() :.2f}mm")
+                Robotiq.stop(robotiq_client, block=True)
+                print(f"Left {left_depth :.2f}mm", f"Right {right_depth :.2f}mm")
                 break
             if (time.time() - close_time) > 3:
                 print("Gripper closed")
                 break
         
-
+        rospy.sleep(1)
+        print("After stopping")
+        print(f"Left {left_depth :.2f}mm", f"Right {right_depth :.2f}mm")
         input("Press ENTER to open gripper")
-        Robotiq.goto(robotiq_client, open, speed, force, block=False)
+        Robotiq.open(robotiq_client, speed, force, block=True)
         print("Reset Digit")
         reset_digit()
 
-        
-
 if __name__ == '__main__':
-    grasp()
+    # grasp_oneshot()
+    grasp_steps()
