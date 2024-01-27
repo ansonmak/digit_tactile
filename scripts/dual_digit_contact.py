@@ -41,6 +41,7 @@ class DigitContact:
         self._digit = DigitSensor(self.config.fps, self.config.res, self.config.ID)
         self.call = self._digit()
         self.dm_zero = 0
+        self.prev_deformation = 0.0
         self.actual_deformation = 0.0
         self.zero_depth_sample = 50
         self.pub = publish
@@ -65,6 +66,7 @@ class DigitContact:
         self.img_depth = self.img_depth.detach().cpu().numpy() # final depth image for current image
 
         max_deformation = np.min(self.img_depth.flatten())
+        self.prev_deformation = self.actual_deformation
         self.actual_deformation = float(np.abs((max_deformation - np.min(self.dm_zero))) * 1000) # convert to mm
 
         # Get the first 50 frames and average them to get the zero depth
@@ -94,8 +96,12 @@ class DigitContact:
         pt = ContactArea()
         contact_msg = Contact()
         contact_msg.theta, contact_msg.x, contact_msg.y = pt.__call__(target=self.result_img)
-        contact_msg.depth = self.actual_deformation
+        if abs(self.actual_deformation-self.prev_deformation) > 1.0:
+            print("Error reading...Skip publishing.")
+            return False
+        else: contact_msg.depth = self.actual_deformation
         self.pub.publish(contact_msg)
+        return True
 
     def reset(self):
         self.dm_zero = 0
@@ -138,10 +144,10 @@ def publish_contacts():
             continue # skip the loop during sampling intial frames
 
         left_result_img = leftDigit.get_result_img()
-        leftDigit.publish_contact()
+        if not leftDigit.publish_contact(): continue
 
         right_result_img = rightDigit.get_result_img()
-        rightDigit.publish_contact()
+        if not rightDigit.publish_contact(): continue
 
         left_right_combine_img = np.concatenate((left_result_img, right_result_img), axis=1)
         img_msg = br.cv2_to_imgmsg(left_right_combine_img, encoding="passthrough")
