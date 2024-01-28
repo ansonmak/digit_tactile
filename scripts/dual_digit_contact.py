@@ -149,7 +149,17 @@ def publish_contacts():
         right_result_img = rightDigit.get_result_img()
         if not rightDigit.publish_contact(): continue
 
-        left_right_combine_img = np.concatenate((left_result_img, right_result_img), axis=1)
+        # add boarder between two image
+        left_bordered_image = cv2.copyMakeBorder(
+                 left_result_img, 
+                 top=0,
+                 bottom=0, 
+                 left=0, 
+                 right=5, 
+                 borderType=cv2.BORDER_CONSTANT, 
+                 value=[255,255,255]
+              )
+        left_right_combine_img = np.concatenate((left_bordered_image, right_result_img), axis=1)
         img_msg = br.cv2_to_imgmsg(left_right_combine_img, encoding="passthrough")
         img_msg.header.stamp = rospy.Time.now()
         depth_pub.publish(img_msg)
