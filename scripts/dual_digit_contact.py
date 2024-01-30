@@ -92,10 +92,10 @@ class DigitContact:
         ret, self.result_img = cv2.threshold(self.diff, 0, 255, cv2.THRESH_TOZERO)
         return self.result_img
 
-    def publish_contact(self):
+    def publish_contact(self, start_time):
         pt = ContactArea()
         contact_msg = Contact()
-        contact_msg.header.stamp = rospy.Time.now()
+        contact_msg.header.stamp = rospy.Time.now() -start_time
         contact_msg.theta, contact_msg.x, contact_msg.y = pt.__call__(target=self.result_img)
         if abs(self.actual_deformation-self.prev_deformation) > 1.0:
             print("Error reading...Skip publishing.")
@@ -145,10 +145,10 @@ def publish_contacts():
             continue # skip the loop during sampling intial frames
 
         left_result_img = leftDigit.get_result_img()
-        if not leftDigit.publish_contact(): continue
+        if not leftDigit.publish_contact(start_time): continue
 
         right_result_img = rightDigit.get_result_img()
-        if not rightDigit.publish_contact(): continue
+        if not rightDigit.publish_contact(start_time): continue
 
         # add boarder between two image
         left_bordered_image = cv2.copyMakeBorder(
