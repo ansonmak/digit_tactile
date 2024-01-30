@@ -95,6 +95,7 @@ class DigitContact:
     def publish_contact(self):
         pt = ContactArea()
         contact_msg = Contact()
+        contact_msg.header.stamp = rospy.Time.now()
         contact_msg.theta, contact_msg.x, contact_msg.y = pt.__call__(target=self.result_img)
         if abs(self.actual_deformation-self.prev_deformation) > 1.0:
             print("Error reading...Skip publishing.")

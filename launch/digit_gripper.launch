@@ -25,7 +25,11 @@
         name="dual_digit" output="screen">
     </node>
 
-    <!-- Node of  rqt_image_view -->
+    <!-- Node of rqt_image_view -->
      <node pkg="rqt_image_view" type="rqt_image_view" name="digit_depth_image" args="/digit/depth_image/"/>
+
+    <node name="fcontact_plot" pkg="rqt_multiplot" type="rqt_multiplot"
+        args="--multiplot-config $(find digit_tactile)/launch/contact_plot.xml">
+    </node>
  
 </launch>
