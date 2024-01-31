@@ -28,9 +28,9 @@ sensor:
   z_near: 0.001
   z_far: 0.05
 
-  gel_width: 0.01835  # gel width (y-axis) in meters //original: 0.02
-  gel_height: 0.02460 # gel height (x-axis) in meters //original: 0.03
-  gel_thickness: 0.0046 # gel thickness in meters
+  gel_width: 0.01961  # gel width (y-axis) in meters //original: 0.02
+  gel_height: 0.02560 # gel height (x-axis) in meters //original: 0.03
+  gel_thickness: 0.0034 # gel thickness in meters
   gel_min_depth: 0.01954 # gel min depth in meters (max deformation) 
 
 mm_to_pixel: 18.68 # 1 mm = 17.15 pixels
