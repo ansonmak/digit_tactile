@@ -36,7 +36,7 @@ class DigitConfig:
         self.max_depth = self.config['max_depth']
         
 class DigitContact:
-    def __init__(self, config, publish, model_name):
+    def __init__(self, config, publish, model_name, depth_scale=1.0):
         self.config = config
         self._digit = DigitSensor(self.config.fps, self.config.res, self.config.ID)
         self.call = self._digit()
@@ -50,6 +50,7 @@ class DigitContact:
         self.model.eval()
         self.init_counter = 0
         self.reset_depth = True
+        self.depth_scale = depth_scale
 
     def get_depth_img(self):
         # get camera frame from digit sensor
@@ -100,7 +101,7 @@ class DigitContact:
         if abs(self.actual_deformation-self.prev_deformation) > 1.0:
             print("Error reading...Skip publishing.")
             return False
-        else: contact_msg.depth = self.actual_deformation
+        else: contact_msg.depth = self.actual_deformation * self.depth_scale
         self.pub.publish(contact_msg)
         return True
 
