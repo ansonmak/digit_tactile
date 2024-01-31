@@ -47,21 +47,24 @@ def reset_digit():
 
 # close gripper in small step, stop closing when detected
 def grasp_steps():
-    grip_depth = 0.15
+    grip_depth = 0.2
     step = float(1.0 / 1000.0)  # meter
     speed = 0.2
-    force = 0.01
-    Robotiq.open(robotiq_client, block=False)
+    force = 0.0
+
+    start_width = 0.07 #0.085
+    # Robotiq.open(robotiq_client, block=False)
+    Robotiq.goto(robotiq_client, start_width, block=False)
 
     while not rospy.is_shutdown(): 
         # print(left_depth, right_depth)
         input("Press ENTER to close gripper")
-        width = 0.085
+        width = start_width
         while (get_max_depth() < grip_depth and width > 0.0):
             width -= step
             print(f"Closing at: {width*1000 :.2f}mm")
             Robotiq.goto(robotiq_client, width, speed, force, block=True)
-            rospy.sleep(0.05)
+            rospy.sleep(0.1)
         if (width > 0.0001):
             print("Object detected! Stopped gripper action")
             print(f"Left {left_depth :.2f}mm", f"Right {right_depth :.2f}mm")
@@ -77,8 +80,8 @@ def grasp_steps():
 # close gripper in one command and stop when detect
 def grasp_oneshot():
     grip_depth = 0.1
-    speed = 0.01
-    force = 0.01
+    speed = 0.001
+    force = 0.00
     Robotiq.open(robotiq_client, speed, force, block=False)
 
     while not rospy.is_shutdown(): 
