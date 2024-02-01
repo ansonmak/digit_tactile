@@ -40,6 +40,7 @@ class DigitContact:
         self.config = config
         self._digit = DigitSensor(self.config.fps, self.config.res, self.config.ID)
         self.call = self._digit()
+        self.img_raw = None
         self.dm_zero = 0
         self.prev_deformation = 0.0
         self.actual_deformation = 0.0
@@ -55,6 +56,7 @@ class DigitContact:
     def get_depth_img(self):
         # get camera frame from digit sensor
         frame = self.call.get_frame()
+        self.img_raw = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         # get normal mapping img with trained model
         img_np = preproc_mlp(frame)
         img_np = self.model(img_np).detach().cpu().numpy()
@@ -152,17 +154,34 @@ def publish_contacts():
         if not rightDigit.publish_contact(start_time): continue
 
         # add boarder between two image
-        left_bordered_image = cv2.copyMakeBorder(
+        left_raw_bordered = cv2.copyMakeBorder(
+                 leftDigit.img_raw, 
+                 top=0,
+                 bottom=0, 
+                 left=0, 
+                 right=2, 
+                 borderType=cv2.BORDER_CONSTANT, 
+                 value=[255,255,255])
+        raw_comb_img = np.concatenate((left_raw_bordered, rightDigit.img_raw), axis=1)
+        # add boarder between two image
+        left_result_bordered = cv2.copyMakeBorder(
                  left_result_img, 
                  top=0,
                  bottom=0, 
                  left=0, 
-                 right=5, 
+                 right=2, 
                  borderType=cv2.BORDER_CONSTANT, 
-                 value=[255,255,255]
-              )
-        left_right_combine_img = np.concatenate((left_bordered_image, right_result_img), axis=1)
-        img_msg = br.cv2_to_imgmsg(left_right_combine_img, encoding="passthrough")
+                 value=[255,255,255])
+        depth_comb_img = np.concatenate((left_result_bordered, right_result_img), axis=1)
+        # increase depth img contrast 
+        alpha = 300
+        depth_comb_img = np.where(depth_comb_img*alpha>255, 255, depth_comb_img*alpha)
+        # combine rgb and gray
+        depth_comb_img = depth_comb_img.astype('uint8')
+        depth_comb_img = cv2.cvtColor(depth_comb_img, cv2.COLOR_GRAY2RGB)
+        comb_img = cv2.vconcat([raw_comb_img, depth_comb_img])
+        # publish combined img
+        img_msg = br.cv2_to_imgmsg(comb_img, encoding="rgb8")
         img_msg.header.stamp = rospy.Time.now()
         depth_pub.publish(img_msg)
 
