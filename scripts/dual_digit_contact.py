@@ -52,7 +52,7 @@ class DigitContact:
         self.init_counter = 0
         self.reset_depth = True
         self.depth_scale = depth_scale
-        self.contact_threshold = 10
+        self.contact_threshold = 15
 
     def get_depth_img(self):
         # get camera frame from digit sensor
@@ -102,7 +102,7 @@ class DigitContact:
         contact_msg.header.stamp = rospy.Time.now() -start_time
         contact_msg.theta, contact_msg.x, contact_msg.y = pt.__call__(target=self.result_img)
         if abs(self.actual_deformation-self.prev_deformation) > 1.0:
-            print("Error reading...Skip publishing.")
+            rospy.logwarn("Error reading...Skip publishing.")
             return False
         else: contact_msg.depth = self.actual_deformation * self.depth_scale
         self.pub.publish(contact_msg)
