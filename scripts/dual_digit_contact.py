@@ -52,6 +52,7 @@ class DigitContact:
         self.init_counter = 0
         self.reset_depth = True
         self.depth_scale = depth_scale
+        self.contact_threshold = 10
 
     def get_depth_img(self):
         # get camera frame from digit sensor
@@ -96,7 +97,7 @@ class DigitContact:
         return self.result_img
 
     def publish_contact(self, start_time):
-        pt = ContactArea()
+        pt = ContactArea(self.contact_threshold)
         contact_msg = Contact()
         contact_msg.header.stamp = rospy.Time.now() -start_time
         contact_msg.theta, contact_msg.x, contact_msg.y = pt.__call__(target=self.result_img)
