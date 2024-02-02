@@ -27,14 +27,20 @@ SPEED = 0.01 #m/s
 FORCE  = 0 # percentage
 
 left_depth = None
+left_pos = (None, None)
 def leftContact_callback(data):
     global left_depth
+    global left_pos
     left_depth = data.depth
+    left_pos = (data.x, data.y)
 
 right_depth = None
+right_pos = (None, None)
 def rightContact_callback(data):
     global right_depth
+    global right_pos
     right_depth = data.depth
+    right_pos = (data.x, data.y)
 
 def get_avg_depth():
     return (left_depth + right_depth)/2
@@ -55,8 +61,8 @@ def reset_digit():
 
 def control_depth(target_depth, current_width):
     if left_depth is None or right_depth is None: # return false if sensors fail
-        rospy.logwarn("Cannot receive digit feedback")
-        return False 
+        rospy.logwarn("Cannot receive digit feedback!")
+        return False, None
 
     Kp = 8.0
     Kd = 1.0
@@ -68,16 +74,16 @@ def control_depth(target_depth, current_width):
         error = target_depth - current_depth
         if abs(error) < depth_setpoint_range: # return success if depth within setpoint range
             print(f"Depth={target_depth}mm achieved!")
-            return True 
+            return True, width
         derivative = error - prev_error
         width_control = Kp*error + Kd*derivative # width change in mm
         previous_error = error
         width -= width_control/1000
         if width > MAX_WIDTH or width < MIN_WIDTH: # return false if width out of gripper's range
             rospy.logwarn("No object detected!")
-            return False 
+            return False, None 
         
-        print("-------")
+        print("--------Controlling Depth--------")
         print(f"Target depth={target_depth}mm")
         print(f"Left={left_depth:.2f}mm, Right={right_depth:.2f}mm")
         print(f"Width change={width_control:.2f}mm, Gripper go to width={width*1000:.2f}mm")
@@ -102,10 +108,30 @@ def grasp(width, depth):
 
     return control_depth(depth, width) # return if grasp success of not
 
-# def detect_slip(init_depth, max_depth):
-#     if get_max_depth(depth, ) < init_depth: break
+def detect_slip(width, init_depth, max_depth, slip_threshold):
+    if left_pos[0] is None or right_pos[0] is None: 
+        rospy.logwarn("Cannot receive digit feedback!")
+        return
+    elif left_pos[0] == -1 or right_pos[0] == -1:
+        rospy.logwarn("Position feedback not detected!")
+        return
 
-    # while True:
+    left_init_pos = left_pos
+    right_init_pos = right_pos
+    while True:
+        left_pos_error = ((left_pos[0] - left_init_pos[0])**2 + (left_pos[1] - left_init_pos[1])**2)**0.5
+        right_pos_error = ((right_pos[0] - right_init_pos[0])**2 + (right_pos[1] - right_init_pos[1])**2)**0.5
+        if left_pos_error > slip_threshold or right_pos_error > slip_threshold:
+            rospy.logwarn("Slip detected!")
+            rospy.logwarn("Increasing gripping force")
+            status, width = control_depth(max_depth, width)
+            if not status: return
+            rospy.sleep(2.0)
+            rospy.logwarn("Relaxing gripping force")
+            status, width = control_depth(init_depth, width)
+            if not status: return
+            left_init_pos = left_pos
+            right_init_pos = right_pos
 
 def release():
     print("Opening gripper")
@@ -114,18 +140,22 @@ def release():
     reset_digit()
 
 if __name__ == '__main__':
-    obj_name = 'paper_cup'
+    obj_name = 'coke_bottle'
     with open(f"{base_path}/grasp_config/" + obj_name + ".yaml", 'r') as stream:
         config = yaml.safe_load(stream)
     obj_size = config['object_size']
     obj_size /= 1000 # convert to meter
     grip_offset = 0 # mm
     grip_offset /= 1000 # convert to meter
-    grip_width = obj_size + grip_offset
+    init_grip_width = obj_size + grip_offset
     init_grip_depth = config['init_grip_depth']
     max_grip_depth = config['max_grip_depth']
+    slip_detect_threshold = config['slip_detect_threshold']
 
-    print(grasp(grip_width, init_grip_depth))
+    grasp_status, width = grasp(init_grip_width, init_grip_depth)
+    if grasp_status: 
+        detect_slip(width, init_grip_depth, max_grip_depth, slip_detect_threshold)
+    # release()
 
     # while not rospy.is_shutdown(): 
     #     if grasp(grip_width, init_grip_depth): 
