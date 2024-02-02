@@ -1,6 +1,11 @@
 #! /usr/bin/env python
 import rospy
 import time
+import yaml
+import sys, os
+from pathlib import Path
+base_path = Path(__file__).parent.resolve()
+sys.path.append(os.path.abspath(base_path))
 
 # actionlib for Robotiq gripper
 import actionlib
@@ -54,7 +59,7 @@ def control_depth(target_depth, current_width):
         return False 
 
     Kp = 8.0
-    Kd = 0.0
+    Kd = 1.0
     prev_error = 0
     depth_setpoint_range = 0.05
     width = current_width
@@ -91,8 +96,8 @@ def grasp(width, depth):
     rospy.sleep(3)
 
     print(f"Gripping width: {width*1000:.2f} mm")
-    input("Press ENTER to start gripping")
     Robotiq.goto(robotiq_client, width, block=False)
+    input("Press ENTER to start gripping")
     rospy.sleep(1)
 
     return control_depth(depth, width) # return if grasp success of not
@@ -109,13 +114,16 @@ def release():
     reset_digit()
 
 if __name__ == '__main__':
-    obj_size = 33.07 # mm #80: paper cup33.07 coke bottle
+    obj_name = 'paper_cup'
+    with open(f"{base_path}/grasp_config/" + obj_name + ".yaml", 'r') as stream:
+        config = yaml.safe_load(stream)
+    obj_size = config['object_size']
     obj_size /= 1000 # convert to meter
-    init_grip_offset = 0 # mm
-    init_grip_offset /= 1000 # convert to meter
-    grip_width = obj_size + init_grip_offset
-    init_grip_depth = 0.5 # mm coke bottle: 0.5
-    max_grip_depth = 1.2 # mm
+    grip_offset = 0 # mm
+    grip_offset /= 1000 # convert to meter
+    grip_width = obj_size + grip_offset
+    init_grip_depth = config['init_grip_depth']
+    max_grip_depth = config['max_grip_depth']
 
     print(grasp(grip_width, init_grip_depth))
 

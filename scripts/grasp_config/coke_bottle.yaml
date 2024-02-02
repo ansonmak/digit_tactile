@@ -1,0 +1,5 @@
+# Gripping position: bottle cover
+object_size: 33.0 # [mm]  
+grip_offset: 0 # [mm]: offset of initial gripping width from object size
+init_grip_depth: 0.5 # [mm]: initial target sensor depth to grip
+max_grip_depth: 0.8 # [mm]: maximum target sensor depth to grip if slip detected

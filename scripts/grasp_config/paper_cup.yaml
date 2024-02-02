@@ -1,0 +1,5 @@
+# Gripping position: top ring of the cup
+object_size: 80.0 # [mm]
+grip_offset: 0 # [mm]: offset of initial gripping width from object size
+init_grip_depth: 0.2 # [mm]: initial target sensor depth to grip
+max_grip_depth: 0.5 # [mm]: maximum target sensor depth to grip if slip detected
