@@ -18,12 +18,12 @@ robotiq_client = actionlib.SimpleActionClient(action_name, CommandRobotiqGripper
 robotiq_client.wait_for_server()
 
 
-left_depth = 0.0
+left_depth = None
 def leftContact_callback(data):
     global left_depth
     left_depth = data.depth
 
-right_depth = 0.0
+right_depth = None
 def rightContact_callback(data):
     global right_depth
     right_depth = data.depth
