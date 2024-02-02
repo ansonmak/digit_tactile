@@ -64,8 +64,8 @@ def control_depth(target_depth, current_width):
         rospy.logwarn("Cannot receive digit feedback!")
         return False, None
 
-    Kp = 8.0
-    Kd = 1.0
+    Kp = 5.0
+    Kd = 0.5
     prev_error = 0
     depth_setpoint_range = 0.05
     width = current_width
@@ -118,6 +118,7 @@ def detect_slip(width, init_depth, max_depth, slip_threshold):
 
     left_init_pos = left_pos
     right_init_pos = right_pos
+    print("Start slip detection...")
     while True:
         left_pos_error = ((left_pos[0] - left_init_pos[0])**2 + (left_pos[1] - left_init_pos[1])**2)**0.5
         right_pos_error = ((right_pos[0] - right_init_pos[0])**2 + (right_pos[1] - right_init_pos[1])**2)**0.5
@@ -126,8 +127,10 @@ def detect_slip(width, init_depth, max_depth, slip_threshold):
             rospy.logwarn("Increasing gripping force")
             status, width = control_depth(max_depth, width)
             if not status: return
-            rospy.sleep(2.0)
-            rospy.logwarn("Relaxing gripping force")
+            #TODO: target depth base on distance change
+            #larger distance change -> larger target depth
+            # new para: max dist change
+            input("Press ENTER to relax gripping force")
             status, width = control_depth(init_depth, width)
             if not status: return
             left_init_pos = left_pos
