@@ -55,20 +55,13 @@ rospy.Subscriber("/digit/right/contact/", Contact, rightContact_callback)
 disable_slip_control = False
 def on_press(key):
     try:
-        # print('alphanumeric key {0} pressed'.format(key.char))
         global disable_slip_control
         disable_slip_control = True
-    except AttributeError:
-        print('special key {0} pressed'.format(
-            key))
+    except AttributeError: pass
 
 def on_release(key):
-    # print('{0} released'.format(key))
     global disable_slip_control
     disable_slip_control = False
-    if key == keyboard.Key.esc:
-        # Stop listener
-        return False
 
 listener = keyboard.Listener(
     on_press=on_press,
@@ -137,6 +130,7 @@ def detect_slip(width, config):
         rospy.logwarn("Cannot receive digit feedback!")
         return
 
+    global disable_slip_control
     init_depth = config['init_grip_depth']
     max_depth = config['max_grip_depth']
     slip_threshold = config['slip_detect_threshold']
@@ -161,10 +155,9 @@ def detect_slip(width, config):
             prev_grip_depth = grip_depth
             grip_depth = error/max_slip * max_depth # grip_depth proportional to slip dist
             grip_depth = min(max(grip_depth, init_depth), max_depth) # bound grip depth within init and max depth
-            if (abs(grip_depth - prev_grip_depth) > 0.05):
-                rospy.logwarn(f"Controlling gripping depth at {grip_depth:.2f}mm")
-                status, width = control_depth(grip_depth, width)
-                if not status: return
+            rospy.logwarn(f"Controlling gripping depth at {grip_depth:.2f}mm")
+            status, width = control_depth(grip_depth, width)
+            if not status: return
             
             # disable slip control if keyboard hit
             if disable_slip_control:
@@ -175,6 +168,7 @@ def detect_slip(width, config):
                 right_init_pos = right_pos
                 prev_grip_depth = 0.0
                 slip_control = False
+                disable_slip_control = False
             rospy.sleep(1)
         else:
             if left_pos_error > slip_threshold or right_pos_error > slip_threshold:
@@ -203,7 +197,7 @@ if __name__ == '__main__':
     if grasp_status: 
         detect_slip(width, config)
     # release()
-
+    
     # while not rospy.is_shutdown(): 
     #     if grasp(grip_width, init_grip_depth): 
     #         detect_slip(init_grip_depth, max_grip_depth)
