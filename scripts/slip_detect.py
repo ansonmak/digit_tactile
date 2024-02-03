@@ -84,7 +84,7 @@ def control_depth(target_depth, current_width):
     Kp = 5.0
     Kd = 0.5
     prev_error = 0
-    depth_setpoint_range = 0.05
+    depth_setpoint_range = 0.05 #TODO: Maybe add this to obj config
     width = current_width
     while True: # PD controller
         current_depth = get_max_depth() # use max depth of two sensors
@@ -197,7 +197,7 @@ if __name__ == '__main__':
     if grasp_status: 
         detect_slip(width, config)
     # release()
-    
+
     # while not rospy.is_shutdown(): 
     #     if grasp(grip_width, init_grip_depth): 
     #         detect_slip(init_grip_depth, max_grip_depth)
