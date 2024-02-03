@@ -1,8 +1,8 @@
 # Gripping position: top ring of the cup
 object_size: 76.5 # [mm]
-grip_offset: 0.5 # [mm]: offset of initial gripping width from object size
+grip_offset: -1 # [mm]: offset of initial gripping width from object size
 min_width: 65 # [mm]L minimum gripping width for the object, terminate gripper action if width less than this value
-init_grip_depth: 0.15 # [mm]: initial target sensor depth to grip
-max_grip_depth: 0.3 # [mm]: maximum target sensor depth to grip if slip detected
+init_grip_depth: 0.175 # [mm]: initial target sensor depth to grip
+max_grip_depth: 0.35 # [mm]: maximum target sensor depth to grip if slip detected
 slip_detect_threshold: 10 # [pixel]: change in contacts position to trigger detection
 max_slip_dist: 50 # [pixel]: maximum dist to reach to max grip depth (larger slip dist -> larger grip depth)
