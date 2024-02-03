@@ -188,9 +188,11 @@ def release():
     reset_digit()
 
 if __name__ == '__main__':
-    obj_name = 'coke_bottle' # coke_bottle / paper_cup
+    obj_name = 'plastic_cup' # coke_bottle / paper_cup / plastic_cup
     with open(f"{base_path}/grasp_config/" + obj_name + ".yaml", 'r') as stream:
+        print("Loading config for" + obj_name + "...")
         config = yaml.safe_load(stream)
+    
     obj_size = config['object_size'] / 1000 # convert mm to meter
     grip_offset = config['grip_offset'] / 1000 # convert mm to meter
     MIN_WIDTH = config['min_width'] / 1000 # convert mm to meter
