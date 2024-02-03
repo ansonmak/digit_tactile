@@ -2,6 +2,7 @@
 import rospy
 import time
 import yaml
+from pynput import keyboard
 import sys, os
 from pathlib import Path
 base_path = Path(__file__).parent.resolve()
@@ -50,6 +51,29 @@ def get_max_depth():
 
 rospy.Subscriber("/digit/left/contact/", Contact, leftContact_callback)
 rospy.Subscriber("/digit/right/contact/", Contact, rightContact_callback)
+
+disable_slip_control = False
+def on_press(key):
+    try:
+        # print('alphanumeric key {0} pressed'.format(key.char))
+        global disable_slip_control
+        disable_slip_control = True
+    except AttributeError:
+        print('special key {0} pressed'.format(
+            key))
+
+def on_release(key):
+    # print('{0} released'.format(key))
+    global disable_slip_control
+    disable_slip_control = False
+    if key == keyboard.Key.esc:
+        # Stop listener
+        return False
+
+listener = keyboard.Listener(
+    on_press=on_press,
+    on_release=on_release)
+listener.start()
 
 def reset_digit():
     rospy.wait_for_service('/digit/reset_depth')
@@ -108,33 +132,54 @@ def grasp(width, depth):
 
     return control_depth(depth, width) # return if grasp success of not
 
-def detect_slip(width, init_depth, max_depth, slip_threshold):
+def detect_slip(width, config):
     if left_pos[0] is None or right_pos[0] is None: 
         rospy.logwarn("Cannot receive digit feedback!")
         return
-    elif left_pos[0] == -1 or right_pos[0] == -1:
-        rospy.logwarn("Position feedback not detected!")
-        return
+
+    init_depth = config['init_grip_depth']
+    max_depth = config['max_grip_depth']
+    slip_threshold = config['slip_detect_threshold']
+    max_slip = config['max_slip_dist']
 
     left_init_pos = left_pos
     right_init_pos = right_pos
     print("Start slip detection...")
+    slip_control = False
+    prev_grip_depth = 0.0
+    grip_depth = 0.0 
     while True:
+        if left_pos[0] == -1 or right_pos[0] == -1:
+            rospy.logwarn("Contacts not detected!")
+            return
+        
         left_pos_error = ((left_pos[0] - left_init_pos[0])**2 + (left_pos[1] - left_init_pos[1])**2)**0.5
         right_pos_error = ((right_pos[0] - right_init_pos[0])**2 + (right_pos[1] - right_init_pos[1])**2)**0.5
-        if left_pos_error > slip_threshold or right_pos_error > slip_threshold:
-            rospy.logwarn("Slip detected!")
-            rospy.logwarn("Increasing gripping force")
-            status, width = control_depth(max_depth, width)
-            if not status: return
-            #TODO: target depth base on distance change
-            #larger distance change -> larger target depth
-            # new para: max dist change
-            input("Press ENTER to relax gripping force")
-            status, width = control_depth(init_depth, width)
-            if not status: return
-            left_init_pos = left_pos
-            right_init_pos = right_pos
+
+        if slip_control:
+            error = max(left_pos_error, right_pos_error)
+            prev_grip_depth = grip_depth
+            grip_depth = error/max_slip * max_depth # grip_depth proportional to slip dist
+            grip_depth = min(max(grip_depth, init_depth), max_depth) # bound grip depth within init and max depth
+            if (abs(grip_depth - prev_grip_depth) > 0.05):
+                rospy.logwarn(f"Controlling gripping depth at {grip_depth:.2f}mm")
+                status, width = control_depth(grip_depth, width)
+                if not status: return
+            
+            # disable slip control if keyboard hit
+            if disable_slip_control:
+                rospy.logwarn("Disabling slip controling")
+                status, width = control_depth(init_depth, width)
+                if not status: return
+                left_init_pos = left_pos
+                right_init_pos = right_pos
+                prev_grip_depth = 0.0
+                slip_control = False
+            rospy.sleep(1)
+        else:
+            if left_pos_error > slip_threshold or right_pos_error > slip_threshold:
+                rospy.logwarn("Slip detected!")
+                slip_control = True
 
 def release():
     print("Opening gripper")
@@ -143,21 +188,18 @@ def release():
     reset_digit()
 
 if __name__ == '__main__':
-    obj_name = 'coke_bottle'
+    obj_name = 'coke_bottle' # coke_bottle / paper_cup
     with open(f"{base_path}/grasp_config/" + obj_name + ".yaml", 'r') as stream:
         config = yaml.safe_load(stream)
-    obj_size = config['object_size']
-    obj_size /= 1000 # convert to meter
-    grip_offset = 0 # mm
-    grip_offset /= 1000 # convert to meter
+    obj_size = config['object_size'] / 1000 # convert mm to meter
+    grip_offset = config['grip_offset'] / 1000 # convert mm to meter
+    MIN_WIDTH = config['min_width'] / 1000 # convert mm to meter
     init_grip_width = obj_size + grip_offset
     init_grip_depth = config['init_grip_depth']
-    max_grip_depth = config['max_grip_depth']
-    slip_detect_threshold = config['slip_detect_threshold']
 
     grasp_status, width = grasp(init_grip_width, init_grip_depth)
     if grasp_status: 
-        detect_slip(width, init_grip_depth, max_grip_depth, slip_detect_threshold)
+        detect_slip(width, config)
     # release()
 
     # while not rospy.is_shutdown(): 
