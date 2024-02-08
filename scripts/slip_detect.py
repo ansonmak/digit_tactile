@@ -182,7 +182,7 @@ def release():
     reset_digit()
 
 if __name__ == '__main__':
-    obj_name = 'coke_bottle' # coke_bottle / paper_cup / plastic_cup
+    obj_name = 'coke_bottle_pivot' # coke_bottle / paper_cup / plastic_cup
     with open(f"{base_path}/grasp_config/" + obj_name + ".yaml", 'r') as stream:
         print("Loading config for " + obj_name + "...")
         config = yaml.safe_load(stream)
