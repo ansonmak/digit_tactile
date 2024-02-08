@@ -1,6 +1,5 @@
 #! /usr/bin/env python
 import rospy
-import time
 import yaml
 from pynput import keyboard
 import sys, os
