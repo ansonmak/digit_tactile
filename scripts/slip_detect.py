@@ -24,7 +24,7 @@ robotiq_client = actionlib.SimpleActionClient(action_name, CommandRobotiqGripper
 robotiq_client.wait_for_server()
 MAX_WIDTH = 0.085 # 85mm
 MIN_WIDTH = 0.001 # 1mm
-SPEED = 0.01 #m/s
+SPEED = 0.01 # m/s
 FORCE  = 0 # percentage
 
 left_depth = None
