@@ -87,9 +87,9 @@ class SlipController:
         self.max_depth = config['max_grip_depth']
         self.slip_threshold = config['slip_detect_threshold']
         self.max_slip = config['max_slip_dist']
-        self.control_time = 0.7 # time to sleep at each control loop
-        self.Kp = 5.0
-        self.Kd = 0.5
+        self.control_time = 0.5 # time to sleep at each control loop
+        self.Kp = 4
+        self.Kd = 0.1
 
         self.width = self.init_width
         self.target_depth = self.init_depth
