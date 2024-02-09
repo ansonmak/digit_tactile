@@ -17,5 +17,6 @@ if __name__ == '__main__':
     controller = SlipController(config)
     if controller.init_grasp():
         controller.detect_slip()
-
+    input("Press ENTER to release gripper")
+    controller.release()
 

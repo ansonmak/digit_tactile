@@ -87,7 +87,7 @@ class SlipController:
         self.max_depth = config['max_grip_depth']
         self.slip_threshold = config['slip_detect_threshold']
         self.max_slip = config['max_slip_dist']
-        self.control_time = 0.5 # time to sleep at each control loop
+        self.control_time = 0.3 # time to sleep at each control loop
         self.Kp = 4
         self.Kd = 0.1
 
@@ -125,7 +125,7 @@ class SlipController:
             # if ans != 'y': return False
 
             Robotiq.goto(robotiq_client, self.width, self.SPEED, self.FORCE, block=True)
-            rospy.sleep(0.5)
+            rospy.sleep(self.control_time)
 
 
     def init_grasp(self):
@@ -164,7 +164,7 @@ class SlipController:
             if slip_control:
                 error = max(left_pos_error, right_pos_error)
                 prev_depth = self.target_depth
-                self.target_depth = error/self.max_slip * self.max_depth # target_depth proportional to slip dist
+                self.target_depth = self.init_depth + error/self.max_slip * self.max_depth # target_depth proportional to slip dist
                 self.target_depth = min(max(self.target_depth, self.init_depth), self.max_depth) # bound grip depth within init and max depth
                 rospy.logwarn(f"Controlling gripping depth at {self.target_depth:.2f}mm")
                 if not self.control_depth(): return
@@ -181,7 +181,7 @@ class SlipController:
                     slip_control = False
                     disable_slip_control = False
 
-                rospy.sleep(self.control_time)
+                rospy.sleep(0.5)
             else:
                 if left_pos_error > self.slip_threshold or right_pos_error > self.slip_threshold:
                     rospy.logwarn("Slip detected!")
@@ -189,7 +189,7 @@ class SlipController:
 
 
     def release(self):
-        print("Opening gripper")
-        Robotiq.open(robotiq_client, block=False)
+        print("Opening gripper...")
+        Robotiq.goto(robotiq_client, self.init_width, block=False)
         print("Resetting Digit...")
         reset_digit()
